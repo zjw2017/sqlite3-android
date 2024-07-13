@@ -1,5 +1,15 @@
 # SQLite build scripts for Android
 
+<div align="center">
+<strong>
+<samp>
+
+[简体中文](README_zh.md) · [English](README.md)
+
+</samp>
+</strong>
+</div>
+
 This repository contains scripts to generate the following SQLite artifacts for Android:
 - Statically Linked CLI (`sqlite3-static`)
 - Dynamically Linked CLI (`sqlite3-dynamic`)
@@ -28,8 +38,8 @@ Extract year and version from it and put them into the Makefile as follows:
 vi Makefile
 
 ...
-SQLITE_VERSION ?= 3410200
-SQLITE_YEAR    ?= 2023
+SQLITE_VERSION ?= 3500400
+SQLITE_YEAR    ?= 2025
 ...
 ```
 

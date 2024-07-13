@@ -1,9 +1,7 @@
 # http://www.sqlite.org/download.html
 
-SQLITE_VERSION  ?= 3420000
-SQLITE_YEAR     ?= 2023
-
-SQLITE_BASENAME := sqlite-amalgamation-$(SQLITE_VERSION)
+SQLITE_YEAR     ?= 2025
+SQLITE_BASENAME ?= sqlite-amalgamation-3500400
 
 SQLITE_URL      := https://www.sqlite.org/$(SQLITE_YEAR)/$(SQLITE_BASENAME).zip
 
@@ -24,7 +22,7 @@ $(SQLITE_BASENAME).zip:
 
 # Clean
 clean:
-	rm -f "$(SQLITE_BASENAME).zip"
+	rm -rf "$(SQLITE_BASENAME).zip"
 	rm -rf "$(SQLITE_BASENAME)"
 	rm -rf build
 	rm -rf obj
