@@ -37,8 +37,8 @@
 vi Makefile
 
 ...
-SQLITE_VERSION ?= 3460000
-SQLITE_YEAR    ?= 2024
+SQLITE_VERSION ?= 3500400
+SQLITE_YEAR    ?= 2025
 ...
 ```
 
