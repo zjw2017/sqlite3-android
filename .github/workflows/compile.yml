@@ -1,33 +1,81 @@
 name: Makefile CI
 
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
   workflow_dispatch:
+  schedule:
+    - cron: '21 23 * * 1' # 每周一 07:21 执行一次 (UTC时间)
 
 jobs:
-  build:
-    if: github.actor != 'dependabot[bot]'
-    runs-on: ubuntu-latest
 
+  check_sqlite_version:
+    runs-on: ubuntu-latest
+    outputs:
+      need_update: ${{ steps.get_sqlite_update.outputs.need_update }}
+      latest_sqlite_version: ${{ steps.get_sqlite_update.outputs.latest_sqlite_version }}
+      latest_sqlite_basename: ${{ steps.get_sqlite_update.outputs.latest_sqlite_basename }}
+      latest_sqlite_year: ${{ steps.get_sqlite_update.outputs.latest_sqlite_year }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Check SQLite Version
+        id: get_sqlite_update
+        run: |
+          latest_info=$(curl -s https://www.sqlite.org/download.html | awk -F',' '/^PRODUCT,/ && /sqlite-amalgamation-/')
+
+          latest_sqlite_version=$(echo "$latest_info" | awk -F',' '{print $2}')                                        # 3.53.4
+          latest_sqlite_basename="${echo "$latest_info" | awk -F',' '{print $3}' | xargs basename | sed 's/\.zip$//'}" # sqlite-amalgamation-3530400
+          latest_sqlite_year=$(echo "$latest_info" | awk -F',' '{print $3}' | cut -d'/' -f1)                           # 2026
+
+          current_sqlite_version=$(cat SQLite_filename.txt)                                                            # 3.50.4
+
+          if [ "$latest_sqlite_version" == "$current_sqlite_version" ]; then
+            echo -e "\e[1;32mNo updates available. Current SQLite version: $latest_sqlite_version\e[0m"
+            echo "need_update=false" >>$GITHUB_OUTPUT
+          else
+            echo -e "\e[1;31mFound new SQLite version: $latest_sqlite_version\e[0m"
+            echo "latest_sqlite_version=$latest_sqlite_version" >>$GITHUB_OUTPUT
+            echo "latest_sqlite_basename=$latest_sqlite_basename" >>$GITHUB_OUTPUT
+            echo "latest_sqlite_year=$latest_sqlite_year" >>$GITHUB_OUTPUT
+            echo "need_update=true" >>$GITHUB_OUTPUT
+          fi
+
+  build:
+    if: needs.check_sqlite_version.outputs.need_update == 'true'
+    needs: [ check_sqlite_version ]
+    runs-on: ubuntu-latest
     steps:
     - name: Setup Android NDK
-      uses: nttld/setup-ndk@v1.5.0
+      uses: nttld/setup-ndk@v1.6.0
       with:
         ndk-version: r26d
 
-    - name: Checkout code
-      uses: actions/checkout@v5.0.0
+    - name: Checkout Repository
+      uses: actions/checkout@v7.0.1
+      with:
+        token: ${{ secrets.GH_TOKEN }}
 
     - name: Run make
-      run: make
+      run: make SQLITE_YEAR="$latest_sqlite_year" SQLITE_BASENAME="$latest_sqlite_basename"
 
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v4.6.2
+      uses: actions/upload-artifact@v6.0.0
       with:
         path: |
           libs
           obj/local/*/*.a
         if-no-files-found: error
+
+    - name: Push changes to GitHub
+      run: |
+        git config --global user.email "30484319+zjw2017@users.noreply.github.com"
+        git config --global user.name "柚稚"
+        echo "$latest_sqlite_version" >SQLite_filename.txt
+        git add ./SQLite_filename.txt
+        git commit -m "Update SQlite version to $latest_sqlite_version"
+        git push
+      env:
+        latest_sqlite_year: ${{ needs.check_sqlite_version.outputs.latest_sqlite_year }}
+        latest_sqlite_basename: ${{ needs.check_sqlite_version.outputs.latest_sqlite_bas
+        latest_sqlite_version: ${{ needs.check_sqlite_version.outputs.latest_sqlite_version }}
+
