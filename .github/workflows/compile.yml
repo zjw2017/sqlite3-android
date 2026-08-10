@@ -62,7 +62,7 @@ jobs:
         latest_sqlite_basename: ${{ needs.check_sqlite_version.outputs.latest_sqlite_basename }}
 
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v6.0.0
+      uses: actions/upload-artifact@v7.0.1
       with:
         path: |
           libs
